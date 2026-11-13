@@ -221,10 +221,18 @@ void main() {
     ]);
     await _pumpWidgetWithProviders(tester, wallpaperService, appsService, settingsService);
 
-    await tester.longPress(find.byKey(Key("${applicationsCategory.id}-me.efesser.flauncher")));
+    // A Fire TV remote may send only down/up, without repeated key-downs.
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.select);
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump();
+    await tester.sendKeyRepeatEvent(LogicalKeyboardKey.select);
+    await tester.pump();
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.select);
     await tester.pump();
 
     expect(find.byType(ApplicationInfoPanel), findsOneWidget);
+    expect(find.text("Reorder"), findsOneWidget);
+    verifyNever(appsService.launchApp(any));
   });
 
   testWidgets("AppCard moves in grid", (tester) async {

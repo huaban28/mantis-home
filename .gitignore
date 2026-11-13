@@ -52,3 +52,11 @@ coverage/
 /dist/
 android/app/upload-keystore.jks
 android/app/secret.properties
+
+# Local test residue and private keys/build artifacts.
+/wallpaper
+*.apk
+*.jks
+*.keystore
+*.pem
+*.key

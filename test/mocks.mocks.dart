@@ -588,6 +588,22 @@ class MockAppsService extends _i1.Mock implements _i12.AppsService {
         returnValueForMissingStub: _i8.Future<void>.value(),
       ) as _i8.Future<void>);
   @override
+  _i8.Future<void> moveToCategory(
+    _i5.App? app,
+    _i5.Category? destination,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #moveToCategory,
+          [
+            app,
+            destination,
+          ],
+        ),
+        returnValue: _i8.Future<void>.value(),
+        returnValueForMissingStub: _i8.Future<void>.value(),
+      ) as _i8.Future<void>);
+  @override
   _i8.Future<void> saveOrderInCategory(_i5.Category? category) =>
       (super.noSuchMethod(
         Invocation.method(

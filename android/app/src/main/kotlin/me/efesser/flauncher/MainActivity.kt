@@ -19,6 +19,10 @@
 package me.efesser.flauncher
 
 import android.content.Intent
+import android.app.ActivityManager
+import android.media.tv.TvInputManager
+import android.media.tv.TvContract
+import java.io.File
 import android.content.Intent.*
 import android.content.pm.*
 import android.graphics.Bitmap
@@ -43,6 +47,8 @@ private const val EVENT_CHANNEL = "me.efesser.flauncher/event"
 
 class MainActivity : FlutterActivity() {
     val launcherAppsCallbacks = ArrayList<LauncherApps.Callback>()
+    private var previousCpuTotal: Long = 0
+    private var previousCpuIdle: Long = 0
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -57,6 +63,10 @@ class MainActivity : FlutterActivity() {
                 "isDefaultLauncher" -> result.success(isDefaultLauncher())
                 "checkForGetContentAvailability" -> result.success(checkForGetContentAvailability())
                 "startAmbientMode" -> result.success(startAmbientMode())
+                "getSystemStats" -> result.success(getSystemStats())
+                "getInputs" -> result.success(getInputs())
+                "openInput" -> result.success(openInput(call.arguments as String))
+                "openNetwork" -> result.success(openNetwork())
                 else -> throw IllegalArgumentException()
             }
         }
@@ -106,6 +116,54 @@ class MainActivity : FlutterActivity() {
         launcherAppsCallbacks.forEach(launcherApps::unregisterCallback)
         super.onDestroy()
     }
+
+    private fun getSystemStats(): Map<String, Any?> {
+        val memory = ActivityManager.MemoryInfo()
+        (getSystemService(ACTIVITY_SERVICE) as ActivityManager).getMemoryInfo(memory)
+        var cpu: Int? = null
+        try {
+            val ticks = File("/proc/stat").bufferedReader().use { it.readLine() }
+                .trim().split(Regex("\\s+")).drop(1).take(8).map { it.toLong() }
+            val total = ticks.sum()
+            val idle = ticks[3] + ticks[4]
+            val delta = total - previousCpuTotal
+            if (previousCpuTotal > 0 && delta > 0) {
+                cpu = ((delta - (idle - previousCpuIdle)).coerceIn(0, delta) * 100 / delta).toInt()
+            }
+            previousCpuTotal = total
+            previousCpuIdle = idle
+        } catch (_: Exception) {
+            // Some firmware hides /proc/stat; show unavailable instead of inventing a reading.
+        }
+        return mapOf("cpuPercent" to cpu,
+            "memoryUsedMb" to (memory.totalMem - memory.availMem) / 1048576L,
+            "memoryTotalMb" to memory.totalMem / 1048576L)
+    }
+
+    private fun getInputs(): List<Map<String, Any>> = try {
+        val manager = getSystemService(TV_INPUT_SERVICE) as TvInputManager
+        manager.tvInputList.map { info -> mapOf("id" to info.id,
+            "name" to info.loadLabel(this).toString(), "physical" to info.isPassthroughInput) }
+    } catch (_: Exception) { emptyList() }
+
+    private fun openInput(id: String): Boolean = try {
+        val manager = getSystemService(TV_INPUT_SERVICE) as TvInputManager
+        val info = manager.tvInputList.firstOrNull { it.id == id }
+        if (info == null) false else {
+            val intent = if (info.isPassthroughInput) {
+                Intent(ACTION_VIEW, TvContract.buildChannelUriForPassthroughInput(id))
+            } else {
+                packageManager.getLeanbackLaunchIntentForPackage(info.serviceInfo.packageName)
+                    ?: packageManager.getLaunchIntentForPackage(info.serviceInfo.packageName)
+            }
+            if (intent == null) false else { startActivity(intent); true }
+        }
+    } catch (_: Exception) { false }
+
+    private fun openNetwork(): Boolean = try {
+        startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
+        true
+    } catch (_: Exception) { false }
 
     private fun getApplications(): List<Map<String, Serializable?>> {
         val tvActivitiesInfo = queryIntentActivities(false)

@@ -23,32 +23,54 @@ import 'package:provider/provider.dart';
 
 class AddToCategoryDialog extends StatelessWidget {
   final App application;
+  final bool move;
 
-  AddToCategoryDialog(this.application);
+  AddToCategoryDialog(this.application, {this.move = false});
 
   @override
   Widget build(BuildContext context) => Selector<AppsService, List<Category>>(
         selector: (_, appsService) => appsService.categoriesWithApps
-            .where((element) => !element.applications.any((app) => app.packageName == application.packageName))
+            .where((element) =>
+                move ||
+                !element.applications
+                    .any((app) => app.packageName == application.packageName))
             .map((categoryWithApps) => categoryWithApps.category)
             .toList(),
         builder: (context, categories, _) => SimpleDialog(
-          title: Text("Add to..."),
+          title: Text(move ? "Move to..." : "Add to..."),
           contentPadding: EdgeInsets.all(16),
-          children: categories
-              .map(
-                (category) => Card(
-                  clipBehavior: Clip.antiAlias,
-                  child: ListTile(
-                    onTap: () async {
-                      await context.read<AppsService>().addToCategory(application, category);
-                      Navigator.of(context).pop();
-                    },
-                    title: Text(category.name),
-                  ),
-                ),
-              )
-              .toList(),
+          children: categories.isEmpty
+              ? [
+                  Text(move
+                      ? "No categories are available."
+                      : "This app is already in every category."),
+                  TextButton(
+                      autofocus: true,
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text("Close")),
+                ]
+              : List.generate(categories.length, (index) {
+                  final category = categories[index];
+                  return Card(
+                    clipBehavior: Clip.antiAlias,
+                    child: TextButton(
+                      autofocus: index == 0,
+                      onPressed: () async {
+                        if (move) {
+                          await context
+                              .read<AppsService>()
+                              .moveToCategory(application, category);
+                        } else {
+                          await context
+                              .read<AppsService>()
+                              .addToCategory(application, category);
+                        }
+                        Navigator.of(context).pop();
+                      },
+                      child: Text(category.name),
+                    ),
+                  );
+                }),
         ),
       );
 }

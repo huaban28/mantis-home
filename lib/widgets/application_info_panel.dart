@@ -18,6 +18,7 @@
 
 import 'package:flauncher/database.dart';
 import 'package:flauncher/providers/apps_service.dart';
+import 'package:flauncher/widgets/add_to_category_dialog.dart';
 import 'package:flauncher/widgets/right_panel_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -33,7 +34,8 @@ class ApplicationInfoPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => RightPanelDialog(
-        child: Column(
+        child: SingleChildScrollView(
+            child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
@@ -81,24 +83,37 @@ class ApplicationInfoPanel extends StatelessWidget {
                   children: [
                     Icon(Icons.open_with),
                     Container(width: 8),
-                    Text("Reorder", style: Theme.of(context).textTheme.bodyMedium),
+                    Text("Reorder",
+                        style: Theme.of(context).textTheme.bodyMedium),
                   ],
                 ),
-                onPressed: () => Navigator.of(context).pop(ApplicationInfoPanelResult.reorderApp),
+                onPressed: () => Navigator.of(context)
+                    .pop(ApplicationInfoPanelResult.reorderApp),
               ),
             TextButton(
               child: Row(
                 children: [
-                  Icon(application.hidden ? Icons.visibility : Icons.visibility_off_outlined),
+                  Icon(application.hidden
+                      ? Icons.visibility
+                      : Icons.visibility_off_outlined),
                   Container(width: 8),
-                  Text(application.hidden ? "Unhide" : "Hide", style: Theme.of(context).textTheme.bodyMedium),
+                  Flexible(
+                      child: Text(
+                          application.hidden
+                              ? "Unhide everywhere"
+                              : "Hide everywhere",
+                          style: Theme.of(context).textTheme.bodyMedium)),
                 ],
               ),
               onPressed: () async {
                 if (application.hidden) {
-                  await context.read<AppsService>().unHideApplication(application);
+                  await context
+                      .read<AppsService>()
+                      .unHideApplication(application);
                 } else {
-                  await context.read<AppsService>().hideApplication(application);
+                  await context
+                      .read<AppsService>()
+                      .hideApplication(application);
                 }
                 Navigator.of(context).pop(ApplicationInfoPanelResult.none);
               },
@@ -120,9 +135,28 @@ class ApplicationInfoPanel extends StatelessWidget {
                   ],
                 ),
                 onPressed: () async {
-                  await context.read<AppsService>().removeFromCategory(application, category!);
+                  await context
+                      .read<AppsService>()
+                      .removeFromCategory(application, category!);
                   Navigator.of(context).pop(ApplicationInfoPanelResult.none);
                 },
+              ),
+            TextButton.icon(
+              icon: Icon(Icons.arrow_forward),
+              label: Text("Move to category"),
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => AddToCategoryDialog(application, move: true),
+              ),
+            ),
+            if (!application.hidden)
+              TextButton.icon(
+                icon: Icon(Icons.add_box_outlined),
+                label: Text("Add to category"),
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (_) => AddToCategoryDialog(application),
+                ),
               ),
             Divider(),
             TextButton(
@@ -130,17 +164,20 @@ class ApplicationInfoPanel extends StatelessWidget {
                 children: [
                   Icon(Icons.info_outlined),
                   Container(width: 8),
-                  Text("App info", style: Theme.of(context).textTheme.bodyMedium),
+                  Text("App info",
+                      style: Theme.of(context).textTheme.bodyMedium),
                 ],
               ),
-              onPressed: () => context.read<AppsService>().openAppInfo(application),
+              onPressed: () =>
+                  context.read<AppsService>().openAppInfo(application),
             ),
             TextButton(
               child: Row(
                 children: [
                   Icon(Icons.delete_outlined),
                   Container(width: 8),
-                  Text("Uninstall", style: Theme.of(context).textTheme.bodyMedium),
+                  Text("Uninstall",
+                      style: Theme.of(context).textTheme.bodyMedium),
                 ],
               ),
               onPressed: () async {
@@ -149,7 +186,7 @@ class ApplicationInfoPanel extends StatelessWidget {
               },
             ),
           ],
-        ),
+        )),
       );
 }
 

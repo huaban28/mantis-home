@@ -16,6 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import 'dart:async';
+import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:flauncher/gradients.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
@@ -30,10 +32,17 @@ import '../mocks.mocks.dart';
 
 void main() {
   late final _MockPathProviderPlatform pathProviderPlatform;
+  late Directory documents;
   setUpAll(() {
     pathProviderPlatform = _MockPathProviderPlatform();
-    when(pathProviderPlatform.getApplicationDocumentsPath()).thenAnswer((_) => Future.value("."));
     PathProviderPlatform.instance = pathProviderPlatform;
+  });
+  setUp(() async {
+    documents = await Directory.systemTemp.createTemp('mantis-wallpaper-test-');
+    when(pathProviderPlatform.getApplicationDocumentsPath()).thenAnswer((_) async => documents.path);
+  });
+  tearDown(() async {
+    await documents.delete(recursive: true);
   });
 
   group("pickWallpaper", () {
@@ -136,13 +145,18 @@ void main() {
   });
 
   test("setGradient", () async {
+    await File('${documents.path}/wallpaper').writeAsBytes([0x01]);
     final imagePicker = _MockImagePicker();
     final fLauncherChannel = MockFLauncherChannel();
     final unsplashService = MockUnsplashService();
     final settingsService = MockSettingsService();
     final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService)
       ..settingsService = settingsService;
-    await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
+    final loaded = Completer<void>();
+    void onLoaded() { if (!loaded.isCompleted) loaded.complete(); }
+    wallpaperService.addListener(onLoaded);
+    await loaded.future;
+    wallpaperService.removeListener(onLoaded);
 
     await wallpaperService.setGradient(FLauncherGradients.greatWhale);
 

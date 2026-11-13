@@ -27,6 +27,7 @@ import 'package:flauncher/widgets/apps_grid.dart';
 import 'package:flauncher/widgets/category_row.dart';
 import 'package:flauncher/widgets/settings/settings_panel.dart';
 import 'package:flauncher/widgets/time_widget.dart';
+import 'package:flauncher/widgets/system_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -79,6 +80,9 @@ class FLauncher extends StatelessWidget {
       );
 
   AppBar _appBar(BuildContext context) => AppBar(
+        automaticallyImplyLeading: false,
+        title: SystemStats(),
+        titleSpacing: 24,
         actions: [
           Stack(
             alignment: Alignment.center,
@@ -100,6 +104,7 @@ class FLauncher extends StatelessWidget {
               ),
             ],
           ),
+          SystemButtons(),
           Padding(
             padding: EdgeInsets.only(left: 16, right: 32),
             child: Align(

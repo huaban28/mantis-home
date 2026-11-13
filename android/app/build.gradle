@@ -56,7 +56,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "me.efesser.flauncher"
+        applicationId "me.efesser.flauncher.mantis"
         minSdkVersion 21
         targetSdkVersion 33
         versionCode flutterVersionCode.toInteger()
@@ -81,7 +81,7 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            signingConfig signingConfigs.debug
         }
     }
 }
